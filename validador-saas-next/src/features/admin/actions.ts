@@ -1,7 +1,7 @@
 "use server";
 
 import { db } from "@/shared/lib/firebase";
-import { collection, getDocs, doc, updateDoc, serverTimestamp, query, orderBy, limit } from "firebase/firestore";
+import { collection, getDocs, query, orderBy, limit } from "firebase/firestore";
 import { analyzeDataOrchestrator } from "@/services/ai/orchestrator";
 
 // Type definition for the Analysis Result
@@ -87,14 +87,6 @@ REGRAS DE CÁLCULO DO SCORE (0-100):
         // Sanitize JSON (remove markdown if AI adds it)
         const jsonString = resultJsonRaw.replace(/```json/g, "").replace(/```/g, "").trim();
         const result: AnalysisResult = JSON.parse(jsonString);
-
-        // Update Firestore
-        const docRef = doc(db, "interviews", id);
-        await updateDoc(docRef, {
-            ...result,
-            analysisDate: Date.now(),
-            status: "analyzed"
-        });
 
         return { success: true, data: result };
     } catch (error: any) {

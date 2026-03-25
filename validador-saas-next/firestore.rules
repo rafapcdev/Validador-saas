@@ -1,0 +1,23 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Regra para a coleção de entrevistas
+    match /interviews/{interviewId} {
+      // Permite criar e atualizar (write) apenas se o usuário estiver autenticado no app (client-side)
+      allow write: if request.auth != null;
+      
+      // Permite leitura pública temporariamente
+      // O motivo é que o actions.ts (Server Action) usa o SDK Client do Firebase, 
+      // que roda no servidor sem saber quem é o usuário autenticado no navegador.
+      // Sem isso, a página /admin vai falhar com Permissão Negada.
+      allow read: if true;
+    }
+
+    // Regra padrão bloqueando o resto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

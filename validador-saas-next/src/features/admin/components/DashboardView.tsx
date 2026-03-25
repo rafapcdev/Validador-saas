@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { getInterviews, analyzeInterview } from "../actions";
+import { db } from "@/shared/lib/firebase";
+import { doc, updateDoc } from "firebase/firestore";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -82,11 +84,24 @@ export function DashboardView() {
         const res = await analyzeInterview(id, target.messages, target.intervieweeName);
 
         if (res.success) {
-            toast({ title: "Análise concluída!", description: "Dados estruturados com sucesso." });
-            // Update local state
-            const newData = data.map(d => d.id === id ? { ...d, ...res.data } : d);
-            setData(newData);
-            calculateStats(newData);
+            try {
+                // Atualiza o Firestore pelo cliente (onde temos a Auth autenticada)
+                const docRef = doc(db, "interviews", id);
+                const updatedData = {
+                    ...res.data,
+                    analysisDate: Date.now(),
+                    status: "analyzed"
+                };
+                await updateDoc(docRef, updatedData);
+
+                toast({ title: "Análise concluída!", description: "Dados estruturados com sucesso." });
+                // Update local state
+                const newData = data.map(d => d.id === id ? { ...d, ...updatedData } : d);
+                setData(newData);
+                calculateStats(newData);
+            } catch (error: any) {
+                toast({ title: "Erro ao salvar", description: error.message, variant: "destructive" });
+            }
         } else {
             toast({ title: "Erro", description: res.error, variant: "destructive" });
         }
